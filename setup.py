@@ -29,7 +29,7 @@ def get_package_name():
 
 
 base_dir = path.abspath(path.dirname(__file__))
-readme_file = path.join(base_dir, 'README.rst')
+readme_file = path.join(base_dir, 'README.md')
 
 # single top-level package
 package_name = get_package_name()

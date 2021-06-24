@@ -1,6 +1,6 @@
 # add to distribution
 include LICENSE.txt
-include README.rst
+include README.md
 include requirements.txt
 
 # Include the data files
