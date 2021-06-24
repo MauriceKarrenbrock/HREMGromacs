@@ -70,7 +70,8 @@ def copy_file_in_hrem_multidir(file_name='empty_plumed.dat',
 
 def make_multiple_hrem_batteries(number_of_batteries,
                                  replicas_per_battery=8,
-                                 plumed_file='empty_plumed.dat'):
+                                 plumed_file='empty_plumed.dat',
+                                 directory=None):
     """high level function that makes multiple hrem-multidir directories
 
     often it is not possible to run the number of nanoseconds wanted in
@@ -88,6 +89,8 @@ def make_multiple_hrem_batteries(number_of_batteries,
         sub-directories
     plumed_file : str or path, default=empty_plumed.dat
         the plumed input file, if it doesn't exist it is created empty
+    directory : str or path, optional, default=current working directory
+        the directory in which the HREM batteries shall be created
 
     Returns
     ---------
@@ -101,13 +104,19 @@ def make_multiple_hrem_batteries(number_of_batteries,
     on only cpu on the other end you may go with 5 ns on 64 cores with broadwell cpus
     but in any case this are arbitrary and very conservative numbers
     """
+
+    if directory is None:
+        directory = Path.cwd()
+    else:
+        directory = Path(directory)
+
     output = []
 
     for i in range(number_of_batteries):
         output.append(
             make_hrem_multidir_directory(
                 number_of_replicas=replicas_per_battery,
-                dir_name=f'BATTERY{i}',
+                dir_name=directory / f'BATTERY{i}',
                 exist_ok=True))
 
         copy_file_in_hrem_multidir(file_name=plumed_file, dir_name=output[-1])
