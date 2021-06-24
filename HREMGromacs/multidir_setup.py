@@ -113,3 +113,43 @@ def make_multiple_hrem_batteries(number_of_batteries,
         copy_file_in_hrem_multidir(file_name=plumed_file, dir_name=output[-1])
 
     return output
+
+
+def make_multidir_mdrun_string_for_hrem(multidir_directories,
+                                        gromacs_path='gmx_mpi',
+                                        plumed_file='empty_plumed.dat',
+                                        deffnm='HREM',
+                                        tpr_file='HREM.tpr',
+                                        replex=100):
+    """Helper function to make the mdrun string for an HREM (with multidir)
+
+    Parameters
+    -----------
+    multidir_directories : list(str) or list(path)
+        the list of the multidir directories. must be ordered
+        the first one is the reference state the last one the most
+        scaled replica
+    gromacs_path : str, default=gmx_mpi
+    plumed_file : str, default=empty_plumed.dat
+    deffnm : str, default=HREM
+    tpr_file : str, default=HREM.tpr
+    replex : int, default=100
+        after how many steps a swap shall be attempted
+
+    Returns
+    ---------
+    str
+        it will look something like
+        gmx_mpi mdrun -v -plumed empty_plumed.dat -replex 100 -hrex -dlb no
+        -multidir BATTERY/scaled0 BATTERY/scaled1 -s HREM.tpr -deffnm HREM
+    """
+
+    multidir_str = [str(i) for i in multidir_directories]
+    multidir_str = ' '.join(multidir_str)
+
+    multidir_str = (
+        f'{gromacs_path} mdrun -v -plumed {plumed_file}'
+        f' -replex {replex} -hrex -dlb no -s {tpr_file} -deffnm {deffnm}'
+        f' -multidir {multidir_str}')
+
+    return multidir_str
