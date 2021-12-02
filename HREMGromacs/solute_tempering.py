@@ -194,12 +194,13 @@ def geometrical_progression(basis=0.2, denom=7):
 
 def prepare_topologies_for_hrem(top_file,
                                 resSeq_to_scale,
-                                mdp_file,
                                 gro_file,
+                                mdp_file=None,
                                 number_of_replicas=8,
                                 basis=0.2,
                                 gmx_path='gmx',
-                                plumed_path='plumed'):
+                                plumed_path='plumed',
+                                preprocess_top=True):
     """High level function to generate the wanted number of scaled topology files for HREM
 
     This function is a high level interface to many of the functions in this module
@@ -212,8 +213,9 @@ def prepare_topologies_for_hrem(top_file,
         the resSeq (residue numbers) of the residues to
         scale, if more residues have the same resSeq no check will
         be done and they will all be scaled
-    mdp_file : str or path
     gro_file : str or path
+    mdp_file : str or path, default=None
+        it is always needed except when `preprocess_top`=False
     number_of_replicas : int, default=8
         the number of HREM replicas you want to do
     basis : float, default=0.2
@@ -225,6 +227,11 @@ def prepare_topologies_for_hrem(top_file,
     plumed_path : str or pathlib.Path, optional, default=plumed
         the path to the plumed executable, as a default it will be searched in the
         PATH and in the current directory (in this order)
+    preprocess_top : bool, optional, default=True
+        if True the .top file will be processed in order to
+        remove all the #include statements, this is necessary for plumed
+        to work properly, but if the input topology is already preprocessed
+        it can be skipped
 
     Returns
     -----------
@@ -235,11 +242,12 @@ def prepare_topologies_for_hrem(top_file,
 
     tmp_elaborated_top = Path('TMP_elaborated_top.top').resolve()
 
-    preprocess_topology(input_top_file=Path(top_file).resolve(),
-                        output_top_file=tmp_elaborated_top,
-                        gro_file=Path(gro_file).resolve(),
-                        mdp_file=Path(mdp_file).resolve(),
-                        gmx_path=gmx_path)
+    if preprocess_top:
+        preprocess_topology(input_top_file=Path(top_file).resolve(),
+                            output_top_file=tmp_elaborated_top,
+                            gro_file=Path(gro_file).resolve(),
+                            mdp_file=Path(mdp_file).resolve(),
+                            gmx_path=gmx_path)
 
     edit_preprocessed_top(input_top_file=tmp_elaborated_top,
                           output_top_file=tmp_elaborated_top,
