@@ -240,14 +240,16 @@ def prepare_topologies_for_hrem(top_file,
         they will be enumerated from 0 to `number_of_replicas`-1
     """
 
-    tmp_elaborated_top = Path('TMP_elaborated_top.top').resolve()
-
     if preprocess_top:
+        tmp_elaborated_top = Path('TMP_elaborated_top.top').resolve()
         preprocess_topology(input_top_file=Path(top_file).resolve(),
                             output_top_file=tmp_elaborated_top,
                             gro_file=Path(gro_file).resolve(),
                             mdp_file=Path(mdp_file).resolve(),
                             gmx_path=gmx_path)
+
+    else:
+        tmp_elaborated_top = gro_file
 
     edit_preprocessed_top(input_top_file=tmp_elaborated_top,
                           output_top_file=tmp_elaborated_top,
