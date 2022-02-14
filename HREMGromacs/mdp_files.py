@@ -68,6 +68,7 @@ class HREMSuperclass(_mdp_files.MdpFile):
     COM COM pulling in gromacs crashes because of poor PBC implemetation if the protein
     crosses the box
     """
+
     def __init__(self,
                  mdp_file,
                  timestep_ps=0.002,
@@ -99,6 +100,7 @@ class HREMSuperclass(_mdp_files.MdpFile):
 class ProteinLigandHREM(HREMSuperclass):
     """Subclasses `HREMSuperclass`
     """
+
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
@@ -226,6 +228,7 @@ class OnlyLigandHREM(HREMSuperclass):
 
     Ligand in vacuum
     """
+
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
@@ -307,7 +310,7 @@ class OnlyLigandHREM(HREMSuperclass):
             '; Scaling of reference coordinates, No, All or COM',
             'refcoord-scaling         = COM', '',
             '; GENERATE VELOCITIES FOR STARTUP RUN',
-            'gen-vel                  = yes',
+            'gen-vel                  = no',
             f'gen-temp                 = {self.temperature}',
             'gen-seed                 = 173529', '', '; OPTIONS FOR BONDS',
             f'constraints              = {self.constraints}',
