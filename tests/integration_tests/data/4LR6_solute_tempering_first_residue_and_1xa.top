@@ -21147,9 +21147,9 @@ HOH          3
 [ atoms ]
 ;   nr       type  resnr residue  atom   cgnr    charge       mass  typeB    chargeB      massB
 ; residue    1 HOH rtp HOH q 0.0
-1     O3_     1     HOH     O     1     -0.83400000     15.999430     ;     qtot     -0.834000
-2     H4_     1     HOH     H1     2     0.41700000     1.007947     ;     qtot     -0.417000
-3     H4_     1     HOH     H2     3     0.41700000     1.007947     ;     qtot     0.000000
+    1         O3      1    HOH      O      1 -0.83400000  15.999430   ; qtot -0.834000
+    2         H4      1    HOH     H1      2 0.41700000   1.007947   ; qtot -0.417000
+    3         H4      1    HOH     H2      3 0.41700000   1.007947   ; qtot 0.000000
 
 #ifdef FLEXIBLE
 

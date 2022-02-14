@@ -71,7 +71,11 @@ def scale_topology_with_plumed(input_top,
         raise RuntimeError(f'Plumed failure\n{r.stderr}')
 
 
-def edit_preprocessed_top(input_top_file, output_top_file, resSeq_to_scale):
+def edit_preprocessed_top(input_top_file,
+                          output_top_file,
+                          protein_resSeq_to_scale,
+                          ligand_resname,
+                          exclude=('HOH', 'WAT', 'SOL')):
     """Edits a preprocessed top file for `scale_topology_with_plumed`
 
     `scale_topology_with_plumed` needs the preprocessed top file
@@ -81,10 +85,20 @@ def edit_preprocessed_top(input_top_file, output_top_file, resSeq_to_scale):
     -----------
     input_top_file : str or pathlib.Path
     output_top_file : str or pathlib.Path
-    resSeq_to_scale : iterable(int)
-        the resSeq (residue numbers) of the residues to
+    protein_resSeq_to_scale : iterable(int)
+        the resSeq (residue numbers) of the residues of the protein to
         scale, if more residues have the same resSeq no check will
-        be done and they will all be scaled
+        be done and they will all be scaled, often in the gromacs top file
+        the resseqs restart from 1 for every molecule so if the protein is not
+        the first molecule you have to check carefully
+    ligand_resname : str
+        as often in the gromacs top file
+        the resseqs restart from 1 for every molecule
+        for ligands you should give the residue names as written in the top file
+    exclude : iterable(str), default=('HOH', 'WAT', 'SOL')
+        as often in the gromacs top file
+        the resseqs restart from 1 for every molecule
+        it is useful to exclude certain molecules like the solvent
     """
 
     with open(input_top_file, 'r') as f:
@@ -119,12 +133,16 @@ def edit_preprocessed_top(input_top_file, output_top_file, resSeq_to_scale):
             # I am looking for lines like this
             # 1         N1      1    SER      N      1 0.18490000  14.006720
             if len(tmp_line) >= 4:
-                #heat the needed residues
-                if int(tmp_line[2].strip()) in resSeq_to_scale:
+                if tmp_line[
+                        3] not in exclude:  # Is not one of the excluded resnames
+                    #heat the needed residues
+                    if (int(tmp_line[2].strip())
+                            in protein_resSeq_to_scale) or (ligand_resname
+                                                            in tmp_line):
 
-                    tmp_line[1] = tmp_line[1] + '_'
+                        tmp_line[1] = tmp_line[1] + '_'
 
-                    lines[i] = (' ' * 5).join(tmp_line) + '\n'
+                        lines[i] = (' ' * 5).join(tmp_line) + '\n'
 
     with open(output_top_file, 'w') as f:
         for line in lines:
@@ -193,14 +211,16 @@ def geometrical_progression(basis=0.2, denom=7):
 
 
 def prepare_topologies_for_hrem(top_file,
-                                resSeq_to_scale,
+                                protein_resSeq_to_scale,
+                                ligand_resname,
                                 gro_file,
                                 mdp_file=None,
                                 number_of_replicas=8,
                                 basis=0.2,
                                 gmx_path='gmx',
                                 plumed_path='plumed',
-                                preprocess_top=True):
+                                preprocess_top=True,
+                                exclude=('HOH', 'WAT', 'SOL')):
     """High level function to generate the wanted number of scaled topology files for HREM
 
     This function is a high level interface to many of the functions in this module
@@ -209,10 +229,16 @@ def prepare_topologies_for_hrem(top_file,
     -------------
     top_file : str ot path
         the input topology file (will not be modified)
-    resSeq_to_scale : iterable(int)
-        the resSeq (residue numbers) of the residues to
+    protein_resSeq_to_scale : iterable(int)
+        the resSeq (residue numbers) of the residues of the protein to
         scale, if more residues have the same resSeq no check will
-        be done and they will all be scaled
+        be done and they will all be scaled, often in the gromacs top file
+        the resseqs restart from 1 for every molecule so if the protein is not
+        the first molecule you have to check carefully
+    ligand_resname : str
+        as often in the gromacs top file
+        the resseqs restart from 1 for every molecule
+        for ligands you should give the residue names as written in the top file
     gro_file : str or path
     mdp_file : str or path, default=None
         it is always needed except when `preprocess_top`=False
@@ -232,6 +258,11 @@ def prepare_topologies_for_hrem(top_file,
         remove all the #include statements, this is necessary for plumed
         to work properly, but if the input topology is already preprocessed
         it can be skipped
+    exclude : iterable(str), default=('HOH', 'WAT', 'SOL')
+        residues not to scale even if they have the right resname
+        as often in the gromacs top file
+        the resseqs restart from 1 for every molecule
+        it is useful to exclude certain molecules like the solvent
 
     Returns
     -----------
@@ -253,7 +284,9 @@ def prepare_topologies_for_hrem(top_file,
 
     edit_preprocessed_top(input_top_file=tmp_elaborated_top,
                           output_top_file=tmp_elaborated_top,
-                          resSeq_to_scale=resSeq_to_scale)
+                          protein_resSeq_to_scale=protein_resSeq_to_scale,
+                          ligand_resname=ligand_resname,
+                          exclude=exclude)
 
     output_top_prefix = Path(top_file).name.rsplit('.', 1)[0] + '_scaled_'
     scaling_values_generator = geometrical_progression(

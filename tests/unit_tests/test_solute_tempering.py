@@ -20,6 +20,7 @@ import HREMGromacs.solute_tempering as _sol
 
 
 class Testscale_topology_with_plumed():
+
     def test_ValueError(self):
 
         with pytest.raises(ValueError):
@@ -48,6 +49,7 @@ class Testscale_topology_with_plumed():
 
 
 class Testpreprocess_topology():
+
     def test_works(self, mocker):
         m_run = mocker.patch('PythonAuxiliaryFunctions.run.subprocess_run')
         m_abspath = mocker.patch(
@@ -72,6 +74,7 @@ class Testpreprocess_topology():
 
 
 class Testgeometrical_progression():
+
     def test_works(self):
         generator = _sol.geometrical_progression(basis=0.2, denom=7)
 
@@ -84,6 +87,7 @@ class Testgeometrical_progression():
 
 
 class Testprepare_topologies_for_hrem():
+
     def test_works(self, mocker):
         scaling_values = (1., 0.5, 0.2)
 
@@ -110,7 +114,10 @@ class Testprepare_topologies_for_hrem():
         ]
 
         output = _sol.prepare_topologies_for_hrem(top_file=input_top,
-                                                  resSeq_to_scale=(1, 2, 3),
+                                                  protein_resSeq_to_scale=(1,
+                                                                           2,
+                                                                           3),
+                                                  ligand_resname='AAAAAAA',
                                                   mdp_file='test.mdp',
                                                   gro_file='test.gro',
                                                   number_of_replicas=3)
@@ -127,7 +134,9 @@ class Testprepare_topologies_for_hrem():
         m_edit_preprocessed_top.assert_called_once_with(
             input_top_file=Path('TMP_elaborated_top.top').resolve(),
             output_top_file=Path('TMP_elaborated_top.top').resolve(),
-            resSeq_to_scale=(1, 2, 3))
+            protein_resSeq_to_scale=(1, 2, 3),
+            ligand_resname='AAAAAAA',
+            exclude=('HOH', 'WAT', 'SOL'))
 
         m_geometrical_progression.assert_called_once_with(basis=0.2, denom=2)
 
