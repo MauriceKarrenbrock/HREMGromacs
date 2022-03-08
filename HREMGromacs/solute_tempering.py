@@ -8,6 +8,7 @@
 """Functions to setup a solute tempering run with plumed
 """
 
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -280,7 +281,8 @@ def prepare_topologies_for_hrem(top_file,
                             gmx_path=gmx_path)
 
     else:
-        tmp_elaborated_top = top_file
+        shutil.copy(top_file, 'TMP_elaborated_top.top')
+        tmp_elaborated_top = Path('TMP_elaborated_top.top').resolve()
 
     edit_preprocessed_top(input_top_file=tmp_elaborated_top,
                           output_top_file=tmp_elaborated_top,
