@@ -13,6 +13,7 @@
 #############################################################
 
 import os
+import warnings
 
 import HREMGromacs.solute_tempering as _sol
 
@@ -64,6 +65,9 @@ class Testprepare_topologies_for_hrem():
             with expected_output[0].open() as f1:
                 with expected_output[1].open() as f2:
                     assert f1.read() != f2.read()
+
+        except OSError:
+            warnings.warn("Gromacs was not found in the path, one or more tests can not be executed")
 
         finally:
             os.chdir(old_dir)
