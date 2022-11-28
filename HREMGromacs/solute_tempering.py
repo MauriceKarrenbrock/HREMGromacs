@@ -241,8 +241,9 @@ def prepare_topologies_for_hrem(top_file,
         the resseqs restart from 1 for every molecule
         for ligands you should give the residue names as written in the top file
     gro_file : str or path
+        gromacs structure file
     mdp_file : str or path, default=None
-        it is always needed except when `preprocess_top`=False
+        it is always needed except when `preprocess_top` = False
     number_of_replicas : int, default=8
         the number of HREM replicas you want to do
     basis : float, default=0.2
@@ -269,7 +270,7 @@ def prepare_topologies_for_hrem(top_file,
     -----------
     list(Path)
         a list of the scaled topologies ordered from scaling 1 (not scaled) to scaling `basis`
-        they will be enumerated from 0 to `number_of_replicas`-1
+        they will be enumerated from 0 to `number_of_replicas` - 1
     """
 
     if preprocess_top:
