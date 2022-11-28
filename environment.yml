@@ -1,0 +1,11 @@
+name: HREMGromacs
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pip
+  - python
+  - plumed
+  - pip:
+    - 'git+https://github.com/MauriceKarrenbrock/FSDAMGromacs.git'
+    - 'git+https://github.com/MauriceKarrenbrock/PythonAuxiliaryFunctions'
