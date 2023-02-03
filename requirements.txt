@@ -1,6 +1,7 @@
 git+https://github.com/MauriceKarrenbrock/FSDAMGromacs.git #FSDAMGromacs
 git+https://github.com/MauriceKarrenbrock/PythonAuxiliaryFunctions #PythonAuxiliaryFunctions
 plumed #conda-forge
+parmed
 
 #NOT PYTHON
 #gromacs

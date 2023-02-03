@@ -10,7 +10,10 @@
 
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
+import parmed
+import copy
 
 import PythonAuxiliaryFunctions.path as _path
 import PythonAuxiliaryFunctions.run as _run
@@ -308,3 +311,308 @@ def prepare_topologies_for_hrem(top_file,
                                    plumed=plumed_path)
 
     return output_files
+
+
+def scale_dihedrals_in_parmed_structure(parmed_structure,
+                               scaling_value,
+                               atom_list,
+                                is_gromacs=False):
+    """Scales the dihedrals of the input parmed structure
+    It does not change the input structure a copy is done
+    
+    Parameters
+    ------------
+    parmed_structure : parmed structure instance
+        it will not be modified a copy is done
+    scaling_value : float
+        new_dihedral = old_dihedral * scaling_value
+    atom_list : numpy.array
+        the zero indexed atom indexes of the atoms in the
+        dihedrals to scale
+    is_gromacs : bool, default=False
+        because I only know how to do it for gromacs
+        if False I will have to transform it in a gromacs
+        parmed structure (time consuming)
+    
+    Returns
+    ----------
+    the modified parmed structure
+    """
+
+    # I only know how to do it for gromacs structures
+    if is_gromacs:
+        parmed_structure = copy.deepcopy(parmed_structure)
+    
+    else:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdirname = Path(tmpdirname)
+
+            parmed_structure.save(str(tmpdirname / "tmp.top"))
+            parmed_structure.save(str(tmpdirname / "tmp.pdb"), renumber=False)
+
+            parmed_structure = parmed.load_file(str(tmpdirname / "tmp.top"),
+                xyz=str(tmpdirname / "tmp.pdb"))
+
+    for dihedral in parmed_structure.dihedrals:
+        if not dihedral.improper:
+            if dihedral.atom2.idx in atom_list and dihedral.atom3.idx in atom_list:
+                new_type = copy.copy(dihedral.type)
+
+                # Check if iterable
+                try:
+                    for t in new_type:
+                        t.phi_k *= scaling_value
+
+                except TypeError:
+                    new_type.phi_k *= scaling_value
+
+                parmed_structure.dihedral_types.append(new_type)
+                parmed_structure.dihedral_types.claim()
+                dihedral.type = parmed_structure.dihedral_types[-1]
+
+    parmed_structure.dihedrals.changed = True
+    parmed_structure.dihedral_types.changed = True
+
+    return parmed_structure
+
+
+def scale_14_interactions_in_parmed_structure(parmed_structure,
+                               scaling_value,
+                               atom_list,
+                                is_gromacs=False):
+    """Scales the 14 interactions of the input parmed structure
+    It does not change the input structure a copy is done
+
+    It creates some new atom tipes with _ after the original name
+    except if _ is already the last part of the atom name
+    
+    Parameters
+    ------------
+    parmed_structure : parmed structure instance
+        it will not be modified a copy is done
+    scaling_value : float
+        new_14_interactions = old_14_interactions * scaling_value
+    atom_list : numpy.array
+        the zero indexed atom indexes of the atoms in the
+        dihedrals to scale
+    is_gromacs : bool, default=False
+        because I only know how to do it for gromacs
+        if False I will have to transform it in a gromacs
+        parmed structure (time consuming)
+    
+    Returns
+    ----------
+    the modified parmed structure
+    """
+
+    # I only know how to do it for gromacs structures
+    if is_gromacs:
+        parmed_structure = copy.deepcopy(parmed_structure)
+    
+    else:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdirname = Path(tmpdirname)
+
+            parmed_structure.save(str(tmpdirname / "tmp.top"))
+            parmed_structure.save(str(tmpdirname / "tmp.pdb"), renumber=False)
+
+            parmed_structure = parmed.load_file(str(tmpdirname / "tmp.top"),
+                xyz=str(tmpdirname / "tmp.pdb"))
+
+    # Necessary to have [ pairs ] defined explicitly (1-4 interactions)
+    parmed_structure.defaults.gen_pairs = "no"
+
+
+    for atom in parmed_structure.atoms:
+        if atom.idx in atom_list:
+            atom.atom_type = copy.copy(atom.atom_type)
+            atom.epsilon_14 *= scaling_value
+            atom.atom_type.epsilon_14 *= scaling_value
+
+            if list(atom.atom_type.name)[-1] != "_":
+                atom.atom_type.name += "_"
+                
+            atom.type = atom.atom_type.name
+            atom.name = atom.atom_type.name
+
+    # Sometimes 1-4 interactions are here
+    if parmed_structure.adjusts:
+        for adjust in parmed_structure.adjusts:
+            if adjust.atom1.idx in atom_list and adjust.atom2.idx in atom_list:
+                adjust.type = copy.copy(adjust.type)
+                # LJ 1-4
+                adjust.type.epsilon *= scaling_value
+                # Charges 1-4
+                adjust.type.chgscale *= scaling_value
+
+                parmed_structure.adjust_types.append(adjust.type)
+
+                parmed_structure.adjust_types.claim()
+
+                parmed_structure.adjusts.claim()
+
+        parmed_structure.adjust_types.changed = True
+        parmed_structure.adjusts.changed = True
+
+    parmed_structure.atoms.changed = True
+
+    return parmed_structure
+
+
+def scale_vdw_and_charges_in_parmed_structure(parmed_structure,
+                               scaling_value,
+                               atom_list,
+                                is_gromacs=False,
+                                scale_charges=True,
+                                scale_vdw=True):
+    """Scales vdw and charges of the input parmed structure
+    It does not change the input structure a copy is done
+    it does not touch the 14 interactions
+
+    It creates some new atom tipes with _ after the original name
+    except if _ is already the last part of the atom name
+    
+    Parameters
+    ------------
+    parmed_structure : parmed structure instance
+        it will not be modified a copy is done
+    scaling_value : float
+        new = old * scaling_value
+    atom_list : numpy.array
+        the zero indexed atom indexes of the atoms in the
+        dihedrals to scale
+    is_gromacs : bool, default=False
+        because I only know how to do it for gromacs
+        if False I will have to transform it in a gromacs
+        parmed structure (time consuming)
+    scale_charges : bool, default=True
+    scale_vdw : bool, default=True
+    
+    Returns
+    ----------
+    the modified parmed structure
+    """
+
+    # I only know how to do it for gromacs structures
+    if is_gromacs:
+        parmed_structure = copy.deepcopy(parmed_structure)
+    
+    else:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdirname = Path(tmpdirname)
+
+            parmed_structure.save(str(tmpdirname / "tmp.top"))
+            parmed_structure.save(str(tmpdirname / "tmp.pdb"), renumber=False)
+            
+            parmed_structure = parmed.load_file(str(tmpdirname / "tmp.top"),
+                xyz=str(tmpdirname / "tmp.pdb"))
+
+    for atom in parmed_structure.atoms:
+        if atom.idx in atom_list:
+            atom.atom_type = copy.copy(atom.atom_type)
+
+            if scale_vdw:
+                atom.epsilon *= scaling_value
+                atom.atom_type.epsilon *= scaling_value
+            
+            if scale_charges:
+                atom.charge *= scaling_value
+                atom.atom_type.charge *= scaling_value
+            
+            if list(atom.atom_type.name)[-1] != "_":
+                atom.atom_type.name += "_"
+
+            atom.type = atom.atom_type.name
+            atom.name = atom.atom_type.name
+    parmed_structure.atoms.changed = True
+
+    return parmed_structure
+
+
+def scale_topologies_with_parmed(input_top,
+                                output_top,
+                                xyz,
+                                atom_list,
+                                dihedral_scaling=None,
+                                interaction14_scaling=None,
+                                vdw_scaling=None,
+                                q_scaling=None):
+    """High level function to scale contributions in a topology file
+    It uses parmed, therefore it should work with any supported format
+    as input and output but only gromacs topology files have been
+    tested
+    
+    Parameters
+    ------------
+    input_top : str or Path
+        input topology file, any parmed supported format
+    output_top : str or Path
+        output topology file, any parmed supported format
+    xyz : str or Path
+        a file contaning the coordinates of the system (like PDB),
+        any parmed supported format
+    atom_list : numpy.array
+        the zero indexed atom indexes of the atoms in the
+        dihedrals to scale
+    dihedral_scaling : float, default=None
+        new = old * scaling_value
+    interaction14_scaling : float, default=None
+        new = old * scaling_value
+    vdw_scaling : float, default=None
+        scale van der waals
+        new = old * scaling_value
+    q_scaling : float, default=None
+        scale charges
+        new = old * scaling_value
+    
+    Warning
+    --------------
+    it should work with any parmed supported format
+    as input and output but only gromacs topology files have been
+    tested
+
+    If output_top = input_top
+    the input one will be overwritten
+    """
+    parmed_structure = parmed.load_file(str(input_top), xyz=str(xyz))
+    
+    # I only know how to do it for gromacs structures
+    if Path(input_top).suffix != ".top":
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdirname = Path(tmpdirname)
+
+            parmed_structure.save(str(tmpdirname / "tmp.top"))
+            parmed_structure.save(str(tmpdirname / "tmp.pdb"), renumber=False)
+
+            parmed_structure = parmed.load_file(str(tmpdirname / "tmp.top"),
+                xyz=str(tmpdirname / "tmp.pdb"))
+
+    if dihedral_scaling is not None:
+        parmed_structure = scale_dihedrals_in_parmed_structure(parmed_structure,
+                                scaling_value=dihedral_scaling,
+                                atom_list=atom_list,
+                                is_gromacs=True)
+
+    if interaction14_scaling is not None:
+        parmed_structure = scale_14_interactions_in_parmed_structure(parmed_structure,
+                                scaling_value=interaction14_scaling,
+                                atom_list=atom_list,
+                                is_gromacs=True)
+
+    if vdw_scaling is not None:
+        parmed_structure = scale_vdw_and_charges_in_parmed_structure(parmed_structure,
+                                scaling_value=vdw_scaling,
+                                atom_list=atom_list,
+                                is_gromacs=True,
+                                scale_charges=False,
+                                scale_vdw=True)
+
+    if q_scaling is not None:
+        parmed_structure = scale_vdw_and_charges_in_parmed_structure(parmed_structure,
+                                scaling_value=vdw_scaling,
+                                atom_list=atom_list,
+                                is_gromacs=True,
+                                scale_charges=True,
+                                scale_vdw=False)
+    
+    parmed_structure.save(str(output_top), overwrite=True)

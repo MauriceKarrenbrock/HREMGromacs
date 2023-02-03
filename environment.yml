@@ -6,6 +6,7 @@ dependencies:
   - pip
   - python
   - plumed
+  - parmed
   - pip:
     - 'git+https://github.com/MauriceKarrenbrock/FSDAMGromacs.git'
     - 'git+https://github.com/MauriceKarrenbrock/PythonAuxiliaryFunctions'
