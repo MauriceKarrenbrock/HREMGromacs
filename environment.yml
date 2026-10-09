@@ -7,6 +7,8 @@ dependencies:
   - python
   - plumed
   - parmed
+  - pytest
+  - pytest-mock
   - pip:
     - 'git+https://github.com/MauriceKarrenbrock/FSDAMGromacs.git'
     - 'git+https://github.com/MauriceKarrenbrock/PythonAuxiliaryFunctions'
